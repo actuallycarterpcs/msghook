@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>gator's webhook thingy</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Comic+Sans+MS&display=swap">
+    <style>
+        body {
+            font-family: 'Comic Sans MS', cursive;
+            background-color: #000;
+            color: #d100d1;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        h1 {
+            margin: 0 0 10px;
+            text-align: center;
+            color: #d100d1;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d100d1;
+            background: #000;
+            color: #d100d1;
+            font-family: 'Comic Sans MS', cursive;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+
+        textarea {
+            height: 80px;
+            resize: vertical;
+        }
+
+        button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #d100d1;
+            color: #000;
+            border: 1px solid #d100d1;
+            font-family: 'Comic Sans MS', cursive;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #a100a1;
+        }
+
+        .response-message {
+            margin-top: 10px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .embed-button {
+            display: inline-block;
+            width: calc(100% - 22px);
+            padding: 10px;
+            text-align: center;
+            background-color: #d100d1;
+            color: #000;
+            border: 1px solid #d100d1;
+            font-family: 'Comic Sans MS', cursive;
+            cursor: pointer;
+            margin-top: 10px;
+            border-radius: 5px;
+        }
+
+        .embed-fields {
+            display: none;
+            margin-top: 10px;
+            background-color: #000;
+            border: 1px solid #d100d1;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .embed-fields.show {
+            display: block;
+        }
+
+        .embed-fields input,
+        .embed-fields textarea {
+            background: #000;
+            color: #d100d1;
+            border: 1px solid #d100d1;
+        }
+
+        .embed-toggle {
+            display: none;
+        }
+        
+        .embed-toggle-label {
+            display: inline-block;
+            width: calc(100% - 22px);
+            padding: 10px;
+            text-align: center;
+            color: #d100d1;
+            border: 1px solid #d100d1;
+            cursor: pointer;
+            margin-top: 10px;
+            font-family: 'Comic Sans MS', cursive;
+            border-radius: 5px;
+        }
+
+        .embed-toggle-label:hover {
+            color: #a100a1;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <h1>gator was here</h1>
+        <form id="messageForm">
+            <div>
+                <label for="webhookUrl">Webhook URL:</label>
+                <input type="text" id="webhookUrl" name="webhookUrl" placeholder="Enter your webhook URL" required>
+            </div>
+
+            <div>
+                <label for="message">Message:</label>
+                <input type="text" id="message" name="message" placeholder="Enter your message">
+            </div>
+
+            <div>
+                <input type="checkbox" id="useEmbed" class="embed-toggle">
+                <label for="useEmbed" class="embed-toggle-label">Use Embed Instead >_<</label>
+            </div>
+
+            <div id="embedFields" class="embed-fields">
+                <div>
+                    <label for="embedTitle">Embed Title:</label>
+                    <input type="text" id="embedTitle" name="embedTitle" placeholder="Enter embed title">
+                </div>
+
+                <div>
+                    <label for="embedDescription">Embed Description:</label>
+                    <textarea id="embedDescription" name="embedDescription" placeholder="Enter embed description"></textarea>
+                </div>
+            </div>
+
+            <button type="submit">Send Message</button>
+        </form>
+        <p id="responseMessage" class="response-message"></p>
+    </div>
+
+    <script>
+        document.getElementById('useEmbed').addEventListener('change', function() {
+            const embedFields = document.getElementById('embedFields');
+            if (this.checked) {
+                embedFields.classList.add('show');
+                document.getElementById('message').value = '';
+            } else {
+                embedFields.classList.remove('show');
+            }
+        });
+
+        document.getElementById('messageForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const webhookUrl = document.getElementById('webhookUrl').value;
+            const message = document.getElementById('message').value.trim();
+            const useEmbed = document.getElementById('useEmbed').checked;
+            const embedTitle = document.getElementById('embedTitle').value.trim();
+            const embedDescription = document.getElementById('embedDescription').value.trim();
+
+            if (!useEmbed && !message) {
+                document.getElementById('responseMessage').textContent = 'Please enter a message or use embed.';
+                document.getElementById('responseMessage').style.color = '#ff0000';
+                return;
+            }
+
+            if (useEmbed && (!embedTitle || !embedDescription)) {
+                document.getElementById('responseMessage').textContent = 'Please fill out all embed fields.';
+                document.getElementById('responseMessage').style.color = '#ff0000';
+                return;
+            }
+
+            const embed = useEmbed ? {
+                title: embedTitle,
+                description: embedDescription,
+                color: 0xd100d1
+            } : null;
+
+            try {
+                const response = await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        content: useEmbed ? null : message,
+                        embeds: embed ? [embed] : []
+                    })
+                });
+
+                if (response.ok) {
+                    document.getElementById('responseMessage').textContent = 'Message sent successfully';
+                    document.getElementById('responseMessage').style.color = '#d100d1';
+                } else {
+                    document.getElementById('responseMessage').textContent = 'Error sending message';
+                    document.getElementById('responseMessage').style.color = '#ff0000';
+                }
+            } catch (error) {
+                document.getElementById('responseMessage').textContent = 'Error sending message';
+                document.getElementById('responseMessage').style.color = '#ff0000';
+            }
+        });
+    </script>
+</body>
+</html>
